@@ -1,14 +1,15 @@
 package com.sentriot.proto;
 
-import java.io.File;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;
+import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.embedded.ServletRegistrationBean;
 import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
 import org.springframework.context.annotation.Bean;
+
+import java.io.File;
 
 @SpringBootApplication
 public class WebdavApplication {
@@ -34,4 +35,14 @@ public class WebdavApplication {
     {
         return new ServletRegistrationBean(new WebdavServlet(), "/webdav/*");
     }
+
+//    @Bean
+//    public FilterRegistrationBean basicAuthFilterRegistration() {
+//        FilterRegistrationBean registration = new FilterRegistrationBean();
+//        registration.setFilter(new BasicAuthFilter());
+//        registration.addUrlPatterns("/webdav/*");
+//        registration.setOrder(1);
+//        return registration;
+//    }
+
 }
