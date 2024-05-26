@@ -40,8 +40,6 @@ public class WebdavApplication {
     public ServletRegistrationBean servletRegistrationBean()
     {
         WebdavServlet webdavServlet = new WebdavServlet();
-        webdavServlet.setFileSyncEnabled(fileSyncEnabled);
-        webdavServlet.setHpdServer(hpdServer);
         return new ServletRegistrationBean(webdavServlet, "/webdav/*");
     }
 

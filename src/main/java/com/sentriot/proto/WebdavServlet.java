@@ -207,32 +207,6 @@ public class WebdavServlet extends DefaultServlet {
      * /META-INF)?
      */
     private boolean allowSpecialPaths = false;
-
-    /**
-     * 是否需同步文件
-     */
-    boolean fileSyncEnabled = false;
-
-    /**
-     * 慧评达服务地址
-     */
-    String hpdServer;
-
-    public boolean isFileSyncEnabled() {
-        return fileSyncEnabled;
-    }
-
-    public void setFileSyncEnabled(boolean fileSyncEnabled) {
-        this.fileSyncEnabled = fileSyncEnabled;
-    }
-
-    public String getHpdServer() {
-        return hpdServer;
-    }
-
-    public void setHpdServer(String hpdServer) {
-        this.hpdServer = hpdServer;
-    }
     // --------------------------------------------------------- Public Methods
 
 
@@ -401,13 +375,6 @@ public class WebdavServlet extends DefaultServlet {
             break;
         case METHOD_UNLOCK:
             doUnlock(req, resp);
-            break;
-        case METHOD_GET:
-            super.service(req, resp);
-            break;
-        case METHOD_PUT:
-            super.service(req, resp);
-            SyncFileUtils.syncLocalFileToRemote(this.isFileSyncEnabled(), this.getHpdServer(), path);
             break;
         default:
             // DefaultServlet processing

@@ -1,5 +1,6 @@
 package com.sentriot.proto;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.*;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+@Slf4j
 public class SyncFileFilter implements Filter {
 
     /**
@@ -46,12 +48,17 @@ public class SyncFileFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
 
         String method = httpRequest.getMethod();
-        if (StringUtils.equalsIgnoreCase(method, "GET")) {
-            String path = SyncFileUtils.getRelativePath(httpRequest);
+        String path = SyncFileUtils.getRelativePath(httpRequest);
+        log.info("[SyncFileFilter] " + method + ":" + path);
+        if (StringUtils.equalsIgnoreCase(method, "HEAD")) {
             SyncFileUtils.syncRemoteFileToLocal(this.isFileSyncEnabled(), this.getHpdServer(), path);
         }
 
         chain.doFilter(request, response);
+
+        if (StringUtils.equalsIgnoreCase(method, "PUT")) {
+            SyncFileUtils.syncLocalFileToRemote(this.isFileSyncEnabled(), this.getHpdServer(), path);
+        }
     }
 
     @Override
