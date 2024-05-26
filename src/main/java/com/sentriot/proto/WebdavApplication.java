@@ -17,6 +17,12 @@ public class WebdavApplication {
     @Value("${document.root}")
     private String documentRoot;
 
+    @Value("${file.sync.enabled:false}")
+    private boolean fileSyncEnabled;
+
+    @Value("${hpd.server}")
+    private String hpdServer;
+
     public static void main(final String[] args)
     {
         SpringApplication.run(WebdavApplication.class, args);
@@ -33,7 +39,22 @@ public class WebdavApplication {
     @Bean
     public ServletRegistrationBean servletRegistrationBean()
     {
-        return new ServletRegistrationBean(new WebdavServlet(), "/webdav/*");
+        WebdavServlet webdavServlet = new WebdavServlet();
+        webdavServlet.setFileSyncEnabled(fileSyncEnabled);
+        webdavServlet.setHpdServer(hpdServer);
+        return new ServletRegistrationBean(webdavServlet, "/webdav/*");
+    }
+
+    @Bean
+    public FilterRegistrationBean syncFileFilterRegistration() {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        SyncFileFilter syncFileFilter = new SyncFileFilter();
+        syncFileFilter.setFileSyncEnabled(fileSyncEnabled);
+        syncFileFilter.setHpdServer(hpdServer);
+        registration.setFilter(syncFileFilter);
+        registration.addUrlPatterns("/webdav/*");
+        registration.setOrder(1);
+        return registration;
     }
 
 //    @Bean

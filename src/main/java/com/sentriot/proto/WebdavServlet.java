@@ -24,12 +24,16 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import com.alibaba.fastjson.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.WebResource;
 import org.apache.catalina.connector.ResponseFacade;
 import org.apache.catalina.servlets.DefaultServlet;
 import org.apache.catalina.util.ConcurrentDateFormat;
 import org.apache.catalina.util.DOMWriter;
 import org.apache.catalina.util.XMLWriter;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.buf.UDecoder;
 import org.apache.tomcat.util.http.FastHttpDateFormat;
 import org.apache.tomcat.util.http.RequestUtil;
@@ -102,6 +106,7 @@ import org.xml.sax.SAXException;
  * http://host:port/context/content using
  * http://host:port/context/webdavedit/content
  */
+@Slf4j
 public class WebdavServlet extends DefaultServlet {
 
     /**
@@ -125,6 +130,8 @@ public class WebdavServlet extends DefaultServlet {
     private static final String METHOD_MOVE = "MOVE";
     private static final String METHOD_LOCK = "LOCK";
     private static final String METHOD_UNLOCK = "UNLOCK";
+    private static final String METHOD_GET = "GET";
+    private static final String METHOD_PUT = "PUT";
     /**
      * PROPFIND - Specify a property mask.
      */
@@ -201,7 +208,31 @@ public class WebdavServlet extends DefaultServlet {
      */
     private boolean allowSpecialPaths = false;
 
+    /**
+     * 是否需同步文件
+     */
+    boolean fileSyncEnabled = false;
 
+    /**
+     * 慧评达服务地址
+     */
+    String hpdServer;
+
+    public boolean isFileSyncEnabled() {
+        return fileSyncEnabled;
+    }
+
+    public void setFileSyncEnabled(boolean fileSyncEnabled) {
+        this.fileSyncEnabled = fileSyncEnabled;
+    }
+
+    public String getHpdServer() {
+        return hpdServer;
+    }
+
+    public void setHpdServer(String hpdServer) {
+        this.hpdServer = hpdServer;
+    }
     // --------------------------------------------------------- Public Methods
 
 
@@ -259,6 +290,69 @@ public class WebdavServlet extends DefaultServlet {
     }
 
 
+//    /**
+//     * Handles the special WebDAV methods.
+//     */
+//    @Override
+//    protected void service(final HttpServletRequest req, final HttpServletResponse resp)
+//                throws ServletException, IOException
+//    {
+//        final String path = getRelativePath(req);
+//
+//        // Block access to special subdirectories.
+//        // DefaultServlet assumes it services resources from the root of the web app
+//        // and doesn't add any special path protection
+//        // WebdavServlet remounts the webapp under a new path, so this check is
+//        // necessary on all methods (including GET).
+//        if (isSpecialPath(path)) {
+//            resp.sendError(WebdavStatus.SC_NOT_FOUND);
+//            return;
+//        }
+//
+//        final String method = req.getMethod();
+//
+//        if (this.debug > 0) {
+//            log("[" + method + "] " + path);
+//        }
+//
+//        switch (method) {
+//        case METHOD_PROPFIND:
+//            doPropfind(req, resp);
+//            break;
+//        case METHOD_PROPPATCH:
+//            doProppatch(req, resp);
+//            break;
+//        case METHOD_MKCOL:
+//            doMkcol(req, resp);
+//            break;
+//        case METHOD_COPY:
+//            doCopy(req, resp);
+//            break;
+//        case METHOD_MOVE:
+//            doMove(req, resp);
+//            break;
+//        case METHOD_LOCK:
+//            doLock(req, resp);
+//            break;
+//        case METHOD_UNLOCK:
+//            doUnlock(req, resp);
+//            break;
+//        case METHOD_GET:
+//            // TODO 如果文件存储到OSS，则先下载到本地（需防止重复下载，且记录下载日志）
+//            super.service(req, resp);
+//            break;
+//        case METHOD_PUT:
+//            super.service(req, resp);
+//            // TODO 如果文件存储到OSS，则同步到OSS（需防止重复上传，且记录同步日志）
+//            break;
+//        default:
+//            // DefaultServlet processing
+//            super.service(req, resp);
+//            break;
+//        }
+//
+//    }
+
     /**
      * Handles the special WebDAV methods.
      */
@@ -286,25 +380,34 @@ public class WebdavServlet extends DefaultServlet {
 
         switch (method) {
         case METHOD_PROPFIND:
-            doPropfind(req, resp);
-            break;
+//            doPropfind(req, resp);
+//            break;
         case METHOD_PROPPATCH:
-            doProppatch(req, resp);
-            break;
+//            doProppatch(req, resp);
+//            break;
         case METHOD_MKCOL:
-            doMkcol(req, resp);
-            break;
+//            doMkcol(req, resp);
+//            break;
         case METHOD_COPY:
-            doCopy(req, resp);
-            break;
+//            doCopy(req, resp);
+//            break;
         case METHOD_MOVE:
-            doMove(req, resp);
+//            doMove(req, resp);
+            resp.addHeader("Allow", "LOCK, UNLOCK, GET, PUT");
+            resp.sendError(WebdavStatus.SC_METHOD_NOT_ALLOWED);
             break;
         case METHOD_LOCK:
             doLock(req, resp);
             break;
         case METHOD_UNLOCK:
             doUnlock(req, resp);
+            break;
+        case METHOD_GET:
+            super.service(req, resp);
+            break;
+        case METHOD_PUT:
+            super.service(req, resp);
+            SyncFileUtils.syncLocalFileToRemote(this.isFileSyncEnabled(), this.getHpdServer(), path);
             break;
         default:
             // DefaultServlet processing
@@ -313,7 +416,6 @@ public class WebdavServlet extends DefaultServlet {
         }
 
     }
-
 
     /**
      * Checks whether a given path refers to a resource under
