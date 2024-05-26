@@ -53,7 +53,7 @@ public class WebdavApplication {
         syncFileFilter.setHpdServer(hpdServer);
         registration.setFilter(syncFileFilter);
         registration.addUrlPatterns("/webdav/*");
-        registration.setOrder(1);
+        registration.setOrder(0);
         return registration;
     }
 
